@@ -8,7 +8,6 @@ class CustomLoginView(LoginView):
     template_name = 'users/login.html'
     
     def get_success_url(self):
-        # Redirect based on role if needed, or default
         return '/users/dashboard/'
 
 @login_required
@@ -18,10 +17,13 @@ def dashboard_view(request):
         return render(request, 'users/lecturer_dashboard.html')
     elif user.is_student:
         from assignments.models import Assignment
-        assignments = Assignment.objects.all()
+        if user.assigned_lecturer:
+            assignments = Assignment.objects.filter(created_by=user.assigned_lecturer)
+        else:
+            assignments = Assignment.objects.all()
         return render(request, 'users/student_dashboard.html', {'assignments': assignments})
     else:
-        return render(request, 'users/dashboard.html') # default
+        return render(request, 'users/dashboard.html')
 
 def custom_logout_view(request):
     logout(request)
@@ -38,13 +40,26 @@ def lecturer_register_student_view(request):
         form = StudentRegistrationForm(request.POST)
         if form.is_valid():
             student = form.save(commit=False)
-            # If a lecturer is registering, force auto-assignment
             if request.user.is_lecturer:
                 student.assigned_lecturer = request.user
             student.save()
             return redirect('users:dashboard')
     else:
         form = StudentRegistrationForm()
-        # If lecturer is registering, we can hide/remove the field or just let them pick if needed
-        # but the logic above forces it to them anyway.
     return render(request, 'users/register.html', {'form': form})
+
+@login_required
+def admin_register_lecturer_view(request):
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Only administrators can register lecturers.")
+        
+    from .forms import LecturerRegistrationForm
+    if request.method == 'POST':
+        form = LecturerRegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('users:dashboard')
+    else:
+        form = LecturerRegistrationForm()
+    return render(request, 'users/register.html', {'form': form, 'title': 'Register Lecturer'})

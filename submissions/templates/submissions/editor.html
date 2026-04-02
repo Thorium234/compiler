@@ -55,16 +55,20 @@
             <a href="{% url 'users:dashboard' %}"
                 class="text-slate-400 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 py-1.5 px-3 rounded text-sm font-medium">←
                 Dashboard</a>
-            <h1 class="text-lg font-bold truncate max-w-sm"><span class="text-blue-500 mr-2">/</span>{{ assignment.title
-                }}</h1>
+            <h1 class="text-lg font-bold truncate max-w-sm">
+                <span class="text-blue-500 mr-2">/</span>
+                {% if is_practice %}Practice Sandbox{% else %}{{ assignment.title }}{% endif %}
+            </h1>
         </div>
         <div class="flex gap-3">
             <button id="run-btn"
                 class="bg-slate-800 border border-slate-600 hover:bg-slate-700 hover:border-slate-500 text-slate-200 text-sm font-medium py-1.5 px-4 rounded-md transition-all shadow shadow-black/50">Run
                 (Test)</button>
+            {% if not is_practice %}
             <button id="submit-btn"
                 class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-1.5 px-6 rounded-md transition-all shadow-lg shadow-blue-900/50">Submit
                 Final</button>
+            {% endif %}
         </div>
     </header>
 
@@ -74,8 +78,18 @@
         <div class="w-full lg:w-3/5 flex flex-col border-r border-slate-800">
             <!-- Assignment Brief -->
             <div class="bg-slate-900/50 p-4 border-b border-slate-800 shrink-0 max-h-48 overflow-y-auto">
-                <h3 class="text-xs uppercase tracking-wider text-slate-500 font-bold mb-2">Assignment Brief</h3>
-                <p class="text-sm text-slate-300 leading-relaxed">{{ assignment.description }}</p>
+                <h3 class="text-xs uppercase tracking-wider text-slate-500 font-bold mb-2">
+                    {% if is_practice %}Sandbox Instructions{% else %}Assignment Brief{% endif %}
+                </h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                    {% if is_practice %}
+                    Welcome to the <b>Practice Sandbox</b>. Here you can write and test any Python code.
+                    This environment is isolated and does not affect your grades. Use the 'Run' button above to see your
+                    output.
+                    {% else %}
+                    {{ assignment.description }}
+                    {% endif %}
+                </p>
             </div>
 
             <!-- Editor -->
@@ -98,7 +112,7 @@
                     class="bg-slate-800 px-4 py-1.5 text-xs text-slate-400 font-medium shrink-0 uppercase tracking-widest border-b border-slate-900">
                     Standard Input</div>
                 <textarea id="input-box" class="ide-textarea flex-1 w-full p-4 resize-none text-sm bg-[#162032]"
-                    placeholder="sys.stdin stream data...">{{ assignment.sample_input }}</textarea>
+                    placeholder="sys.stdin stream data...">{% if not is_practice %}{{ assignment.sample_input }}{% endif %}</textarea>
             </div>
 
             <!-- Standard Output -->
@@ -115,7 +129,7 @@
 
     <script>
         const DB_NAME = 'CampusCodeLab';
-        const STORE_NAME = 'autosave_{{ assignment.id }}';
+        const STORE_NAME = 'autosave_{% if is_practice %}sandbox{% else %}{{ assignment.id }}{% endif %}';
         const PENDING_STORE = 'pending_submissions';
         const CODE_KEY = 'latest_code';
         let db;
@@ -159,17 +173,18 @@
         function checkNetwork() { networkBanner.style.display = navigator.onLine ? 'none' : 'block'; }
 
         function queueSubmission(code) {
+            if ("{{ is_practice }}" === "True") return;
             const store = db.transaction(PENDING_STORE, 'readwrite').objectStore(PENDING_STORE);
             store.put({ assignment_id: '{{ assignment.id }}', code: code, timestamp: new Date().getTime() });
             outputArea.innerHTML = `<span class="text-orange-400 font-bold">Network offline. Submission queued locally and will sync in background when you reconnect.</span>`;
         }
 
         function syncPendingSubmissions() {
-            if (!db) return;
+            if (!db || "{{ is_practice }}" === "True") return;
             const req = db.transaction(PENDING_STORE, 'readonly').objectStore(PENDING_STORE).getAll();
             req.onsuccess = () => {
                 req.result.forEach(item => {
-                    fetch("{% url 'submissions:submit' assignment.id %}", {
+                    fetch(`/submissions/submit/${item.assignment_id}/`, {
                         method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" }, body: JSON.stringify({ code: item.code })
                     })
                         .then(res => res.json())
@@ -193,19 +208,21 @@
                 .catch(err => { outputArea.innerText = "Network Error: " + err; });
         });
 
-        document.getElementById('submit-btn').addEventListener('click', () => {
-            if (!navigator.onLine) return queueSubmission(codeEditor.value);
-            outputArea.innerHTML = '<span class="text-blue-400">Submitting code for grading...</span>';
-            fetch("{% url 'submissions:submit' assignment.id %}", {
-                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" }, body: JSON.stringify({ code: codeEditor.value })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    let status = data.passed ? '<span class="text-green-500 font-bold text-lg">■ PASSED</span>' : '<span class="text-red-500 font-bold text-lg">■ FAILED</span>';
-                    outputArea.innerHTML = `${status}<br><br><span class="text-slate-400">--- Raw Output ---</span><br>${escapeHTML(data.output || data.error)}`;
+        if (document.getElementById('submit-btn')) {
+            document.getElementById('submit-btn').addEventListener('click', () => {
+                if (!navigator.onLine) return queueSubmission(codeEditor.value);
+                outputArea.innerHTML = '<span class="text-blue-400">Submitting code for grading...</span>';
+                fetch("{% url 'submissions:submit' assignment.id %}", {
+                    method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" }, body: JSON.stringify({ code: codeEditor.value })
                 })
-                .catch(err => { queueSubmission(codeEditor.value); });
-        });
+                    .then(res => res.json())
+                    .then(data => {
+                        let status = data.passed ? '<span class="text-green-500 font-bold text-lg">■ PASSED</span>' : '<span class="text-red-500 font-bold text-lg">■ FAILED</span>';
+                        outputArea.innerHTML = `${status}<br><br><span class="text-slate-400">--- Raw Output ---</span><br>${escapeHTML(data.output || data.error)}`;
+                    })
+                    .catch(err => { queueSubmission(codeEditor.value); });
+            });
+        }
     </script>
 </body>
 

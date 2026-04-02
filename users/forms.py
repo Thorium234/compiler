@@ -17,7 +17,18 @@ class StudentRegistrationForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.is_student = True
-        # assigned_lecturer is handled by the form field
+        if commit:
+            user.save()
+        return user
+
+class LecturerRegistrationForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ('username',)
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.is_lecturer = True
         if commit:
             user.save()
         return user
