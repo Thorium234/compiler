@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Assignments</title>
+</head>
+
+<body>
+    <h2>Assignments</h2>
+    <a href="{% url 'users:dashboard' %}">Back to Dashboard</a>
+    <ul>
+        {% for assignment in assignments %}
+        <li>{{ assignment.title }} - {{ assignment.created_at|date }}</li>
+        {% empty %}
+        <li>No assignments yet.</li>
+        {% endfor %}
+    </ul>
+</body>
+
+</html>

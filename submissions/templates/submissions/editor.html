@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Editor</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 10px;
+            margin: 0;
+        }
+
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        #code-editor {
+            height: 200px;
+            font-family: monospace;
+        }
+
+        #input-box {
+            height: 60px;
+            font-family: monospace;
+        }
+
+        #output-area {
+            background: #f4f4f4;
+            padding: 10px;
+            min-height: 50px;
+            border: 1px solid #ccc;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Campus Code Lab - Editor</h2>
+    <a href="{% url 'users:dashboard' %}">Back to Dashboard</a>
+
+    <h3>Code Editor</h3>
+    <textarea id="code-editor" placeholder="Write your Python code here..."></textarea>
+
+    <h3>CLI Input (optional)</h3>
+    <textarea id="input-box" placeholder="Program arguments/input..."></textarea>
+
+    <button id="run-btn">Run Code</button>
+
+    <h3>Output</h3>
+    <pre id="output-area">Output will appear here...</pre>
+
+    <script>
+        const DB_NAME = 'CampusCodeLab';
+        const STORE_NAME = 'autosave';
+        const CODE_KEY = 'latest_code';
+        let db;
+
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+
+        request.onsuccess = (e) => {
+            db = e.target.result;
+            loadCode();
+        };
+
+        const codeEditor = document.getElementById('code-editor');
+
+        function saveCode() {
+            if (!db) return;
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            store.put(codeEditor.value, CODE_KEY);
+        }
+
+        function loadCode() {
+            if (!db) return;
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.get(CODE_KEY);
+            req.onsuccess = () => {
+                if (req.result) {
+                    codeEditor.value = req.result;
+                }
+            };
+        }
+
+        setInterval(saveCode, 3000);
+        codeEditor.addEventListener('blur', saveCode);
+
+        document.getElementById('run-btn').addEventListener('click', () => {
+            document.getElementById('output-area').innerText = 'Executing...\\n(Note: Backend execution engine will be implemented in Phase 3)';
+        });
+    </script>
+</body>
+
+</html>

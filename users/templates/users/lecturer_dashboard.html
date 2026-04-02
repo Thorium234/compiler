@@ -15,10 +15,13 @@
     </div>
     <hr>
     <h3>Manage Assignments:</h3>
-    <button>Create New Assignment</button>
+    <a href="{% url 'assignments:create' %}"><button>Create New Assignment</button></a>
     <ul>
-        <li>(Assignment list here)</li>
+        <li><a href="{% url 'assignments:list' %}">View Assignments</a></li>
     </ul>
+    <hr>
+    <h3>Student Submissions:</h3>
+    <a href="{% url 'submissions:list_scaffold' %}"><button>View Submissions</button></a>
 </body>
 
 </html>
