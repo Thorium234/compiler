@@ -98,7 +98,25 @@
         codeEditor.addEventListener('blur', saveCode);
 
         document.getElementById('run-btn').addEventListener('click', () => {
-            document.getElementById('output-area').innerText = 'Executing...\\n(Note: Backend execution engine will be implemented in Phase 3)';
+            document.getElementById('output-area').innerText = 'Executing...';
+            const code = codeEditor.value;
+            const inputs = document.getElementById('input-box').value;
+
+            fetch("{% url 'submissions:execute' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ code, inputs })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('output-area').innerText = data.output || data.error;
+                })
+                .catch(err => {
+                    document.getElementById('output-area').innerText = "Network Error: " + err;
+                });
         });
     </script>
 </body>
