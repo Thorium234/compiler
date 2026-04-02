@@ -14,7 +14,7 @@ class CustomLoginView(LoginView):
 @login_required
 def dashboard_view(request):
     user = request.user
-    if user.is_lecturer:
+    if user.is_lecturer or user.is_superuser:
         return render(request, 'users/lecturer_dashboard.html')
     elif user.is_student:
         from assignments.models import Assignment
@@ -30,15 +30,21 @@ def custom_logout_view(request):
 
 @login_required
 def lecturer_register_student_view(request):
-    if not request.user.is_lecturer:
+    if not (request.user.is_lecturer or request.user.is_superuser):
         from django.http import HttpResponseForbidden
-        return HttpResponseForbidden("Only lecturers can register students.")
+        return HttpResponseForbidden("Only lecturers or admins can register students.")
         
     if request.method == 'POST':
         form = StudentRegistrationForm(request.POST)
         if form.is_valid():
-            form.save()
+            student = form.save(commit=False)
+            # If a lecturer is registering, force auto-assignment
+            if request.user.is_lecturer:
+                student.assigned_lecturer = request.user
+            student.save()
             return redirect('users:dashboard')
     else:
         form = StudentRegistrationForm()
+        # If lecturer is registering, we can hide/remove the field or just let them pick if needed
+        # but the logic above forces it to them anyway.
     return render(request, 'users/register.html', {'form': form})
