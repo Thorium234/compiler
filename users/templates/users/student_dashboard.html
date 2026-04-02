@@ -5,24 +5,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
 </head>
 
-<body>
-    <h2>Student Dashboard</h2>
-    <p>Welcome, {{ user.username }}!</p>
-    <div>
-        <a href="{% url 'users:logout' %}">Logout</a>
-        <h3>Your Assignments:</h3>
-        <ul>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+    <nav class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center shadow-lg">
+        <h1 class="text-xl font-bold text-white flex items-center gap-2">
+            <span
+                class="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white text-sm shadow-inner">CC</span>
+            Campus Code Lab
+        </h1>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-slate-400 font-medium">Student: {{ user.username }}</span>
+            <a href="{% url 'users:logout' %}"
+                class="text-sm text-red-400 hover:text-red-300 font-medium bg-red-900/30 hover:bg-red-900/50 px-3 py-1.5 rounded-full transition-colors border border-red-800/50">Disconnect</a>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto mt-10 px-6">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-white">Your Workspace</h2>
+            <p class="text-slate-400 mt-2">Select an assignment below to launch the integrated development environment.
+            </p>
+        </div>
+
+        <div class="space-y-4">
             {% for assignment in assignments %}
-            <li>
-                {{ assignment.title }}
-                <a href="{% url 'submissions:editor' assignment.id %}"><button>Solve</button></a>
-            </li>
+            <div
+                class="group bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-blue-500 transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md hover:shadow-blue-500/10">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-200 group-hover:text-blue-400 transition-colors">{{
+                        assignment.title }}</h3>
+                    <p class="text-sm text-slate-500 mt-1 line-clamp-1">{{ assignment.description }}</p>
+                </div>
+                <a href="{% url 'submissions:editor' assignment.id %}"
+                    class="whitespace-nowrap bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-6 rounded-lg transition-all shadow-lg hover:shadow-blue-500/20 active:scale-95 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                    </svg>
+                    Solve
+                </a>
+            </div>
             {% empty %}
-            <li>No assignments yet.</li>
+            <div class="bg-slate-800/50 border border-dashed border-slate-700 rounded-xl p-10 text-center">
+                <p class="text-slate-500">No assignments have been posted by the lecturer yet.</p>
+            </div>
             {% endfor %}
-        </ul>
+        </div>
+    </main>
 </body>
 
 </html>

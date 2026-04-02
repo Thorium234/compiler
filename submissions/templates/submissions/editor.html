@@ -5,79 +5,113 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Editor - {{ assignment.title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
             font-family: sans-serif;
-            padding: 10px;
-            margin: 0;
+            background: #0f172a;
+            color: #f8fafc;
         }
 
-        textarea {
-            width: 100%;
-            box-sizing: border-box;
-            margin-bottom: 10px;
+        .ide-textarea {
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            background: #1e293b;
+            color: #e2e8f0;
+            tab-size: 4;
         }
 
-        #code-editor {
-            height: 200px;
-            font-family: monospace;
+        .ide-textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: inset 0 0 0 1px #3b82f6;
         }
 
-        #input-box {
-            height: 60px;
-            font-family: monospace;
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
         }
 
-        #output-area {
-            background: #f4f4f4;
-            padding: 10px;
-            min-height: 50px;
-            border: 1px solid #ccc;
-            font-family: monospace;
-            white-space: pre-wrap;
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
         }
 
-        .success {
-            color: green;
-            font-weight: bold;
-        }
-
-        .fail {
-            color: red;
-            font-weight: bold;
-        }
-
-        #network-banner {
-            background: #e74c3c;
-            color: white;
-            text-align: center;
-            padding: 10px;
-            font-weight: bold;
-            display: none;
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
         }
     </style>
 </head>
 
-<body>
-    <div id="network-banner">You are currently offline. Your submissions will be queued and synced when reconnected.
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <div id="network-banner" class="bg-red-500 text-white text-sm text-center py-1 font-semibold hidden tracking-wide">
+        YOU ARE OFFLINE - Submissions will be queued automatically.
     </div>
 
-    <a href="{% url 'users:dashboard' %}">Back to Dashboard</a>
+    <!-- Header -->
+    <header
+        class="bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 py-3 shrink-0 shadow-md">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'users:dashboard' %}"
+                class="text-slate-400 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 py-1.5 px-3 rounded text-sm font-medium">←
+                Dashboard</a>
+            <h1 class="text-lg font-bold truncate max-w-sm"><span class="text-blue-500 mr-2">/</span>{{ assignment.title
+                }}</h1>
+        </div>
+        <div class="flex gap-3">
+            <button id="run-btn"
+                class="bg-slate-800 border border-slate-600 hover:bg-slate-700 hover:border-slate-500 text-slate-200 text-sm font-medium py-1.5 px-4 rounded-md transition-all shadow shadow-black/50">Run
+                (Test)</button>
+            <button id="submit-btn"
+                class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-1.5 px-6 rounded-md transition-all shadow-lg shadow-blue-900/50">Submit
+                Final</button>
+        </div>
+    </header>
 
-    <h2>{{ assignment.title }}</h2>
-    <p>{{ assignment.description }}</p>
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col lg:flex-row min-h-0">
+        <!-- Left Column: Context & Editor -->
+        <div class="w-full lg:w-3/5 flex flex-col border-r border-slate-800">
+            <!-- Assignment Brief -->
+            <div class="bg-slate-900/50 p-4 border-b border-slate-800 shrink-0 max-h-48 overflow-y-auto">
+                <h3 class="text-xs uppercase tracking-wider text-slate-500 font-bold mb-2">Assignment Brief</h3>
+                <p class="text-sm text-slate-300 leading-relaxed">{{ assignment.description }}</p>
+            </div>
 
-    <h3>Code Editor</h3>
-    <textarea id="code-editor" placeholder="Write your Python code here..."></textarea>
+            <!-- Editor -->
+            <div class="flex-1 flex flex-col bg-[#1e293b] relative">
+                <div
+                    class="bg-slate-800 px-4 py-1.5 flex justify-between items-center text-xs text-slate-400 border-b border-slate-900 shrink-0 select-none">
+                    <span>main.py</span>
+                    <span class="text-yellow-500/70">● Auto-saving</span>
+                </div>
+                <textarea id="code-editor" class="ide-textarea flex-1 w-full p-4 resize-none"
+                    placeholder="# Write your Python 3 code here..." spellcheck="false"></textarea>
+            </div>
+        </div>
 
-    <h3>CLI Input (optional, for manual testing)</h3>
-    <textarea id="input-box" placeholder="Program arguments/input...">{{ assignment.sample_input }}</textarea>
+        <!-- Right Column: I/O -->
+        <div class="w-full lg:w-2/5 flex flex-col bg-slate-900 leading-relaxed">
+            <!-- Standard Input -->
+            <div class="flex-1 flex flex-col border-b border-slate-800 max-h-64">
+                <div
+                    class="bg-slate-800 px-4 py-1.5 text-xs text-slate-400 font-medium shrink-0 uppercase tracking-widest border-b border-slate-900">
+                    Standard Input</div>
+                <textarea id="input-box" class="ide-textarea flex-1 w-full p-4 resize-none text-sm bg-[#162032]"
+                    placeholder="sys.stdin stream data...">{{ assignment.sample_input }}</textarea>
+            </div>
 
-    <button id="run-btn">Run Code (Test)</button>
-    <button id="submit-btn" style="background-color: blue; color: white;">Submit Assignment</button>
-
-    <h3>System Output</h3>
-    <pre id="output-area">Output will appear here...</pre>
+            <!-- Standard Output -->
+            <div class="flex-1 flex flex-col min-h-0 bg-black/40">
+                <div
+                    class="bg-slate-800 px-4 py-1.5 text-xs text-slate-400 font-medium shrink-0 flex justify-between items-center border-b border-slate-900">
+                    <span class="uppercase tracking-widest">Console Output</span>
+                </div>
+                <pre id="output-area"
+                    class="flex-1 p-4 overflow-y-auto text-sm font-mono text-slate-300 whitespace-pre-wrap break-words">Awaiting execution...</pre>
+            </div>
+        </div>
+    </main>
 
     <script>
         const DB_NAME = 'CampusCodeLab';
@@ -89,19 +123,11 @@
         const request = indexedDB.open(DB_NAME, 3);
         request.onupgradeneeded = (e) => {
             db = e.target.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                db.createObjectStore(STORE_NAME);
-            }
-            if (!db.objectStoreNames.contains(PENDING_STORE)) {
-                db.createObjectStore(PENDING_STORE, { keyPath: 'id', autoIncrement: true });
-            }
+            if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+            if (!db.objectStoreNames.contains(PENDING_STORE)) db.createObjectStore(PENDING_STORE, { keyPath: 'id', autoIncrement: true });
         };
 
-        request.onsuccess = (e) => {
-            db = e.target.result;
-            loadCode();
-            checkNetwork();
-        };
+        request.onsuccess = (e) => { db = e.target.result; loadCode(); checkNetwork(); };
 
         const codeEditor = document.getElementById('code-editor');
         const outputArea = document.getElementById('output-area');
@@ -119,75 +145,47 @@
             try {
                 const tx = db.transaction(STORE_NAME, 'readonly');
                 const store = tx.objectStore(STORE_NAME);
-                const req = store.get(CODE_KEY);
-                req.onsuccess = () => {
-                    if (req.result) codeEditor.value = req.result;
-                };
+                store.get(CODE_KEY).onsuccess = (e) => { if (e.target.result) codeEditor.value = e.target.result; };
             } catch (e) { }
         }
 
         setInterval(saveCode, 3000);
         codeEditor.addEventListener('blur', saveCode);
 
-        // Network Handlers
+        // Network Logic
         window.addEventListener('online', () => { checkNetwork(); syncPendingSubmissions(); });
         window.addEventListener('offline', checkNetwork);
 
-        function checkNetwork() {
-            if (navigator.onLine) {
-                networkBanner.style.display = 'none';
-            } else {
-                networkBanner.style.display = 'block';
-            }
-        }
+        function checkNetwork() { networkBanner.style.display = navigator.onLine ? 'none' : 'block'; }
 
         function queueSubmission(code) {
-            const tx = db.transaction(PENDING_STORE, 'readwrite');
-            const store = tx.objectStore(PENDING_STORE);
+            const store = db.transaction(PENDING_STORE, 'readwrite').objectStore(PENDING_STORE);
             store.put({ assignment_id: '{{ assignment.id }}', code: code, timestamp: new Date().getTime() });
-            outputArea.className = '';
-            outputArea.innerText = "Network offline. Submission queued locally and will sync when you reconnect.";
+            outputArea.innerHTML = `<span class="text-orange-400 font-bold">Network offline. Submission queued locally and will sync in background when you reconnect.</span>`;
         }
 
         function syncPendingSubmissions() {
             if (!db) return;
-            const tx = db.transaction(PENDING_STORE, 'readonly');
-            const store = tx.objectStore(PENDING_STORE);
-            const req = store.getAll();
+            const req = db.transaction(PENDING_STORE, 'readonly').objectStore(PENDING_STORE).getAll();
             req.onsuccess = () => {
-                const items = req.result;
-                if (items.length > 0) {
-                    outputArea.innerText += "\\n\\nSyncing " + items.length + " pending offline submissions...";
-                }
-                items.forEach(item => {
+                req.result.forEach(item => {
                     fetch("{% url 'submissions:submit' assignment.id %}", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
-                        body: JSON.stringify({ code: item.code })
+                        method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" }, body: JSON.stringify({ code: item.code })
                     })
                         .then(res => res.json())
-                        .then(() => {
-                            // Delete successful item from queue
-                            const delTx = db.transaction(PENDING_STORE, 'readwrite');
-                            delTx.objectStore(PENDING_STORE).delete(item.id);
-                            outputArea.innerText += "\\nSuccessfully synced offline submission!";
-                        })
-                        .catch(ignored => { });
+                        .then(() => { db.transaction(PENDING_STORE, 'readwrite').objectStore(PENDING_STORE).delete(item.id); })
+                        .catch(() => { });
                 });
             };
         }
 
-        document.getElementById('run-btn').addEventListener('click', () => {
-            if (!navigator.onLine) {
-                outputArea.innerText = "Cannot run tests while offline. You can submit to queue it instead.";
-                return;
-            }
-            outputArea.className = '';
-            outputArea.innerText = 'Executing test run...';
+        function escapeHTML(str) { return new Option(str).innerHTML; }
 
+        document.getElementById('run-btn').addEventListener('click', () => {
+            if (!navigator.onLine) { outputArea.innerText = "Cannot run tests while offline."; return; }
+            outputArea.innerHTML = '<span class="text-yellow-400">Executing...</span>';
             fetch("{% url 'submissions:execute' %}", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
                 body: JSON.stringify({ code: codeEditor.value, inputs: document.getElementById('input-box').value })
             })
                 .then(res => res.json())
@@ -196,31 +194,17 @@
         });
 
         document.getElementById('submit-btn').addEventListener('click', () => {
-            if (!navigator.onLine) {
-                queueSubmission(codeEditor.value);
-                return;
-            }
-            outputArea.className = '';
-            outputArea.innerText = 'Submitting assignment...';
-
+            if (!navigator.onLine) return queueSubmission(codeEditor.value);
+            outputArea.innerHTML = '<span class="text-blue-400">Submitting code for grading...</span>';
             fetch("{% url 'submissions:submit' assignment.id %}", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
-                body: JSON.stringify({ code: codeEditor.value })
+                method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" }, body: JSON.stringify({ code: codeEditor.value })
             })
-                .then(res => {
-                    // If the fetch technically succeeds but the response isn't great, handle it
-                    return res.json();
-                })
+                .then(res => res.json())
                 .then(data => {
-                    let statusMsg = data.passed ? "PASSED\\n" : "FAILED\\n";
-                    outputArea.className = data.passed ? 'success' : 'fail';
-                    outputArea.innerText = "STATUS: " + statusMsg + "OUTPUT:\\n" + (data.output || data.error);
+                    let status = data.passed ? '<span class="text-green-500 font-bold text-lg">■ PASSED</span>' : '<span class="text-red-500 font-bold text-lg">■ FAILED</span>';
+                    outputArea.innerHTML = `${status}<br><br><span class="text-slate-400">--- Raw Output ---</span><br>${escapeHTML(data.output || data.error)}`;
                 })
-                .catch(err => {
-                    // Fetch threw TypeError: network error 
-                    queueSubmission(codeEditor.value);
-                });
+                .catch(err => { queueSubmission(codeEditor.value); });
         });
     </script>
 </body>

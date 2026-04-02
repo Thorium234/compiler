@@ -3,17 +3,82 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Assignment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        form p {
+            margin-bottom: 1rem;
+        }
+
+        form label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        form input,
+        form textarea {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #f9fafb;
+            font-family: 'Inter', sans-serif;
+        }
+
+        form input:focus,
+        form textarea:focus {
+            border-color: #6366f1;
+            ring: 2px solid #6366f1;
+            background: #ffffff;
+        }
+
+        form textarea {
+            min-height: 120px;
+        }
+    </style>
 </head>
 
-<body>
-    <h2>Create Assignment</h2>
-    <a href="{% url 'assignments:list' %}">Back to Assignments</a>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Create</button>
-    </form>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+    <div class="max-w-3xl mx-auto py-10 px-6">
+        <div class="flex items-center gap-4 mb-8">
+            <a href="{% url 'users:dashboard' %}"
+                class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg> Back
+            </a>
+            <h2 class="text-2xl font-bold">Create New Assignment</h2>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <div class="mt-8 pt-6 border-t border-slate-100 flex justify-end">
+                    <button type="submit"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md transition-colors flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                            </path>
+                        </svg>
+                        Publish Assignment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 
 </html>

@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
 
 class CustomLoginView(LoginView):
     template_name = 'users/login.html'
@@ -20,3 +21,8 @@ def dashboard_view(request):
         return render(request, 'users/student_dashboard.html', {'assignments': assignments})
     else:
         return render(request, 'users/dashboard.html') # default
+
+def custom_logout_view(request):
+    logout(request)
+    request.session.flush()
+    return redirect('/users/login/')

@@ -5,23 +5,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lecturer Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
 </head>
 
-<body>
-    <h2>Lecturer Dashboard</h2>
-    <p>Welcome, {{ user.username }}! Manage your classroom.</p>
-    <div>
-        <a href="{% url 'users:logout' %}">Logout</a>
-    </div>
-    <hr>
-    <h3>Manage Assignments:</h3>
-    <a href="{% url 'assignments:create' %}"><button>Create New Assignment</button></a>
-    <ul>
-        <li><a href="{% url 'assignments:list' %}">View Assignments</a></li>
-    </ul>
-    <hr>
-    <h3>Student Submissions:</h3>
-    <a href="{% url 'submissions:list_scaffold' %}"><button>View Submissions</button></a>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+    <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm">
+        <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <span
+                class="w-8 h-8 rounded bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white text-sm">CC</span>
+            Campus Code Lab
+        </h1>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-slate-500 font-medium">Lecturer: {{ user.username }}</span>
+            <a href="{% url 'users:logout' %}"
+                class="text-sm text-red-600 hover:text-red-700 font-medium bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-colors">Sign
+                Out</a>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto mt-8 px-6">
+        <h2 class="text-2xl font-bold text-slate-800 mb-6">Instructor Dashboard</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Assignments Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-slate-700">Manage Assignments</h3>
+                    <div class="bg-blue-100 text-blue-700 p-2 rounded-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-slate-500 text-sm mb-6">Create new exercises and manage existing content for your
+                    students.</p>
+                <div class="flex gap-3">
+                    <a href="{% url 'assignments:create' %}"
+                        class="flex-1 text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors shadow-sm">Create
+                        New</a>
+                    <a href="{% url 'assignments:list' %}"
+                        class="flex-1 text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-4 rounded-lg transition-colors">View
+                        Library</a>
+                </div>
+            </div>
+
+            <!-- Submissions Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-slate-700">Student Submissions</h3>
+                    <div class="bg-green-100 text-green-700 p-2 rounded-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-slate-500 text-sm mb-6">Review grading logs, code artifacts, and track pass/fail
+                    analytics.</p>
+                <a href="{% url 'submissions:list_scaffold' %}"
+                    class="block w-full text-center bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors shadow-sm">View
+                    Submissions</a>
+            </div>
+        </div>
+    </main>
 </body>
 
 </html>
