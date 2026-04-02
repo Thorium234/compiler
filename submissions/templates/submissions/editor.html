@@ -208,6 +208,7 @@
                 .catch(err => { outputArea.innerText = "Network Error: " + err; });
         });
 
+        {% if not is_practice %}
         if (document.getElementById('submit-btn')) {
             document.getElementById('submit-btn').addEventListener('click', () => {
                 if (!navigator.onLine) return queueSubmission(codeEditor.value);
@@ -223,6 +224,7 @@
                     .catch(err => { queueSubmission(codeEditor.value); });
             });
         }
+        {% endif %}
     </script>
 </body>
 
