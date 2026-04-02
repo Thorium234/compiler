@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Editor</title>
+    <title>Code Editor - {{ assignment.title }}</title>
     <style>
         body {
             font-family: sans-serif;
@@ -36,31 +36,44 @@
             font-family: monospace;
             white-space: pre-wrap;
         }
+
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+
+        .fail {
+            color: red;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
-    <h2>Campus Code Lab - Editor</h2>
     <a href="{% url 'users:dashboard' %}">Back to Dashboard</a>
+
+    <h2>{{ assignment.title }}</h2>
+    <p>{{ assignment.description }}</p>
 
     <h3>Code Editor</h3>
     <textarea id="code-editor" placeholder="Write your Python code here..."></textarea>
 
-    <h3>CLI Input (optional)</h3>
-    <textarea id="input-box" placeholder="Program arguments/input..."></textarea>
+    <h3>CLI Input (optional, for manual testing)</h3>
+    <textarea id="input-box" placeholder="Program arguments/input...">{{ assignment.sample_input }}</textarea>
 
-    <button id="run-btn">Run Code</button>
+    <button id="run-btn">Run Code (Test)</button>
+    <button id="submit-btn" style="background-color: blue; color: white;">Submit Assignment</button>
 
-    <h3>Output</h3>
+    <h3>System Output</h3>
     <pre id="output-area">Output will appear here...</pre>
 
     <script>
         const DB_NAME = 'CampusCodeLab';
-        const STORE_NAME = 'autosave';
+        const STORE_NAME = 'autosave_{{ assignment.id }}';
         const CODE_KEY = 'latest_code';
         let db;
 
-        const request = indexedDB.open(DB_NAME, 1);
+        const request = indexedDB.open(DB_NAME, 2);
         request.onupgradeneeded = (e) => {
             db = e.target.result;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -74,6 +87,7 @@
         };
 
         const codeEditor = document.getElementById('code-editor');
+        const outputArea = document.getElementById('output-area');
 
         function saveCode() {
             if (!db) return;
@@ -84,39 +98,56 @@
 
         function loadCode() {
             if (!db) return;
-            const tx = db.transaction(STORE_NAME, 'readonly');
-            const store = tx.objectStore(STORE_NAME);
-            const req = store.get(CODE_KEY);
-            req.onsuccess = () => {
-                if (req.result) {
-                    codeEditor.value = req.result;
-                }
-            };
+            try {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.get(CODE_KEY);
+                req.onsuccess = () => {
+                    if (req.result) {
+                        codeEditor.value = req.result;
+                    }
+                };
+            } catch (e) { }
         }
 
         setInterval(saveCode, 3000);
         codeEditor.addEventListener('blur', saveCode);
 
+        // Run Logic
         document.getElementById('run-btn').addEventListener('click', () => {
-            document.getElementById('output-area').innerText = 'Executing...';
+            outputArea.className = '';
+            outputArea.innerText = 'Executing test run...';
             const code = codeEditor.value;
             const inputs = document.getElementById('input-box').value;
 
             fetch("{% url 'submissions:execute' %}", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"
-                },
+                headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
                 body: JSON.stringify({ code, inputs })
             })
                 .then(res => res.json())
+                .then(data => { outputArea.innerText = data.output || data.error; })
+                .catch(err => { outputArea.innerText = "Network Error: " + err; });
+        });
+
+        // Submit Logic
+        document.getElementById('submit-btn').addEventListener('click', () => {
+            outputArea.className = '';
+            outputArea.innerText = 'Submitting assignment...';
+            const code = codeEditor.value;
+
+            fetch("{% url 'submissions:submit' assignment.id %}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+                body: JSON.stringify({ code })
+            })
+                .then(res => res.json())
                 .then(data => {
-                    document.getElementById('output-area').innerText = data.output || data.error;
+                    let statusMsg = data.passed ? "PASSED\\n" : "FAILED\\n";
+                    outputArea.className = data.passed ? 'success' : 'fail';
+                    outputArea.innerText = "STATUS: " + statusMsg + "OUTPUT:\\n" + (data.output || data.error);
                 })
-                .catch(err => {
-                    document.getElementById('output-area').innerText = "Network Error: " + err;
-                });
+                .catch(err => { outputArea.innerText = "Network Error: " + err; });
         });
     </script>
 </body>

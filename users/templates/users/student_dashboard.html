@@ -12,15 +12,17 @@
     <p>Welcome, {{ user.username }}!</p>
     <div>
         <a href="{% url 'users:logout' %}">Logout</a>
-    </div>
-    <hr>
-    <h3>Tools:</h3>
-    <a href="{% url 'submissions:editor' %}"><button>Open Code Editor</button></a>
-    <hr>
-    <h3>Your Assignments:</h3>
-    <ul>
-        <li>(Assignment list here)</li>
-    </ul>
+        <h3>Your Assignments:</h3>
+        <ul>
+            {% for assignment in assignments %}
+            <li>
+                {{ assignment.title }}
+                <a href="{% url 'submissions:editor' assignment.id %}"><button>Solve</button></a>
+            </li>
+            {% empty %}
+            <li>No assignments yet.</li>
+            {% endfor %}
+        </ul>
 </body>
 
 </html>

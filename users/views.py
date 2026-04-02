@@ -15,6 +15,8 @@ def dashboard_view(request):
     if user.is_lecturer:
         return render(request, 'users/lecturer_dashboard.html')
     elif user.is_student:
-        return render(request, 'users/student_dashboard.html')
+        from assignments.models import Assignment
+        assignments = Assignment.objects.all()
+        return render(request, 'users/student_dashboard.html', {'assignments': assignments})
     else:
         return render(request, 'users/dashboard.html') # default
