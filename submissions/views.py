@@ -64,8 +64,10 @@ def submit_code_view(request, assignment_id):
 
 @login_required
 def submission_list_scaffold(request):
-    if request.user.is_lecturer:
-        submissions = Submission.objects.filter(assignment__created_by=request.user).order_by('-submitted_at')
+    if request.user.is_lecturer or request.user.is_superuser:
+        submissions = Submission.objects.all().order_by('-submitted_at')
+        if not request.user.is_superuser:
+             submissions = submissions.filter(assignment__created_by=request.user)
         return render(request, 'submissions/submission_list_scaffold.html', {'submissions': submissions})
     from django.http import HttpResponseForbidden
     return HttpResponseForbidden("Unauthorized")
