@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecturer Dashboard</title>
+</head>
+
+<body>
+    <h2>Lecturer Dashboard</h2>
+    <p>Welcome, {{ user.username }}! Manage your classroom.</p>
+    <div>
+        <a href="{% url 'users:logout' %}">Logout</a>
+    </div>
+    <hr>
+    <h3>Manage Assignments:</h3>
+    <button>Create New Assignment</button>
+    <ul>
+        <li>(Assignment list here)</li>
+    </ul>
+</body>
+
+</html>
