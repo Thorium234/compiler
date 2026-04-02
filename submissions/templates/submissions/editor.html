@@ -46,10 +46,22 @@
             color: red;
             font-weight: bold;
         }
+
+        #network-banner {
+            background: #e74c3c;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            display: none;
+        }
     </style>
 </head>
 
 <body>
+    <div id="network-banner">You are currently offline. Your submissions will be queued and synced when reconnected.
+    </div>
+
     <a href="{% url 'users:dashboard' %}">Back to Dashboard</a>
 
     <h2>{{ assignment.title }}</h2>
@@ -70,24 +82,30 @@
     <script>
         const DB_NAME = 'CampusCodeLab';
         const STORE_NAME = 'autosave_{{ assignment.id }}';
+        const PENDING_STORE = 'pending_submissions';
         const CODE_KEY = 'latest_code';
         let db;
 
-        const request = indexedDB.open(DB_NAME, 2);
+        const request = indexedDB.open(DB_NAME, 3);
         request.onupgradeneeded = (e) => {
             db = e.target.result;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME);
+            }
+            if (!db.objectStoreNames.contains(PENDING_STORE)) {
+                db.createObjectStore(PENDING_STORE, { keyPath: 'id', autoIncrement: true });
             }
         };
 
         request.onsuccess = (e) => {
             db = e.target.result;
             loadCode();
+            checkNetwork();
         };
 
         const codeEditor = document.getElementById('code-editor');
         const outputArea = document.getElementById('output-area');
+        const networkBanner = document.getElementById('network-banner');
 
         function saveCode() {
             if (!db) return;
@@ -103,9 +121,7 @@
                 const store = tx.objectStore(STORE_NAME);
                 const req = store.get(CODE_KEY);
                 req.onsuccess = () => {
-                    if (req.result) {
-                        codeEditor.value = req.result;
-                    }
+                    if (req.result) codeEditor.value = req.result;
                 };
             } catch (e) { }
         }
@@ -113,41 +129,98 @@
         setInterval(saveCode, 3000);
         codeEditor.addEventListener('blur', saveCode);
 
-        // Run Logic
+        // Network Handlers
+        window.addEventListener('online', () => { checkNetwork(); syncPendingSubmissions(); });
+        window.addEventListener('offline', checkNetwork);
+
+        function checkNetwork() {
+            if (navigator.onLine) {
+                networkBanner.style.display = 'none';
+            } else {
+                networkBanner.style.display = 'block';
+            }
+        }
+
+        function queueSubmission(code) {
+            const tx = db.transaction(PENDING_STORE, 'readwrite');
+            const store = tx.objectStore(PENDING_STORE);
+            store.put({ assignment_id: '{{ assignment.id }}', code: code, timestamp: new Date().getTime() });
+            outputArea.className = '';
+            outputArea.innerText = "Network offline. Submission queued locally and will sync when you reconnect.";
+        }
+
+        function syncPendingSubmissions() {
+            if (!db) return;
+            const tx = db.transaction(PENDING_STORE, 'readonly');
+            const store = tx.objectStore(PENDING_STORE);
+            const req = store.getAll();
+            req.onsuccess = () => {
+                const items = req.result;
+                if (items.length > 0) {
+                    outputArea.innerText += "\\n\\nSyncing " + items.length + " pending offline submissions...";
+                }
+                items.forEach(item => {
+                    fetch("{% url 'submissions:submit' assignment.id %}", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+                        body: JSON.stringify({ code: item.code })
+                    })
+                        .then(res => res.json())
+                        .then(() => {
+                            // Delete successful item from queue
+                            const delTx = db.transaction(PENDING_STORE, 'readwrite');
+                            delTx.objectStore(PENDING_STORE).delete(item.id);
+                            outputArea.innerText += "\\nSuccessfully synced offline submission!";
+                        })
+                        .catch(ignored => { });
+                });
+            };
+        }
+
         document.getElementById('run-btn').addEventListener('click', () => {
+            if (!navigator.onLine) {
+                outputArea.innerText = "Cannot run tests while offline. You can submit to queue it instead.";
+                return;
+            }
             outputArea.className = '';
             outputArea.innerText = 'Executing test run...';
-            const code = codeEditor.value;
-            const inputs = document.getElementById('input-box').value;
 
             fetch("{% url 'submissions:execute' %}", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
-                body: JSON.stringify({ code, inputs })
+                body: JSON.stringify({ code: codeEditor.value, inputs: document.getElementById('input-box').value })
             })
                 .then(res => res.json())
                 .then(data => { outputArea.innerText = data.output || data.error; })
                 .catch(err => { outputArea.innerText = "Network Error: " + err; });
         });
 
-        // Submit Logic
         document.getElementById('submit-btn').addEventListener('click', () => {
+            if (!navigator.onLine) {
+                queueSubmission(codeEditor.value);
+                return;
+            }
             outputArea.className = '';
             outputArea.innerText = 'Submitting assignment...';
-            const code = codeEditor.value;
 
             fetch("{% url 'submissions:submit' assignment.id %}", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
-                body: JSON.stringify({ code })
+                body: JSON.stringify({ code: codeEditor.value })
             })
-                .then(res => res.json())
+                .then(res => {
+                    // If the fetch technically succeeds but the response isn't great, handle it
+                    return res.json();
+                })
                 .then(data => {
                     let statusMsg = data.passed ? "PASSED\\n" : "FAILED\\n";
                     outputArea.className = data.passed ? 'success' : 'fail';
                     outputArea.innerText = "STATUS: " + statusMsg + "OUTPUT:\\n" + (data.output || data.error);
                 })
-                .catch(err => { outputArea.innerText = "Network Error: " + err; });
+                .catch(err => {
+                    // Fetch threw TypeError: network error 
+                    queueSubmission(codeEditor.value);
+                });
         });
     </script>
 </body>
