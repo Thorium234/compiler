@@ -14,7 +14,23 @@ class CustomLoginView(LoginView):
 def dashboard_view(request):
     user = request.user
     if user.is_lecturer or user.is_superuser:
-        return render(request, 'users/lecturer_dashboard.html')
+        from submissions.models import Submission
+        submissions = Submission.objects.all()
+        if user.is_lecturer:
+            submissions = submissions.filter(assignment__created_by=user)
+            
+        total_submissions = submissions.count()
+        passed_submissions = submissions.filter(passed=True).count()
+        pass_rate = (passed_submissions / total_submissions * 100) if total_submissions > 0 else 0
+        
+        context = {
+            'stats': {
+                'total': total_submissions,
+                'passed': passed_submissions,
+                'pass_rate': round(pass_rate, 1)
+            }
+        }
+        return render(request, 'users/lecturer_dashboard.html', context)
     elif user.is_student:
         from assignments.models import Assignment
         if user.assigned_lecturer:

@@ -91,6 +91,18 @@ def submit_code_view(request, assignment_id):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 @login_required
+def submission_detail_view(request, submission_id):
+    """View details of a specific submission with code and output."""
+    submission = get_object_or_404(Submission, id=submission_id)
+    
+    # Permission check: Student can only see their own, Lecturer/Admin can see any
+    if not (request.user.is_lecturer or request.user.is_superuser or submission.student == request.user):
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("You do not have permission to view this submission.")
+    
+    return render(request, 'submissions/submission_detail.html', {'submission': submission})
+
+@login_required
 def submission_list_scaffold(request):
     if request.user.is_lecturer or request.user.is_superuser:
         submissions = Submission.objects.all().order_by('-submitted_at')

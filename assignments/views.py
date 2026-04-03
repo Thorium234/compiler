@@ -12,6 +12,9 @@ class AssignmentListView(LoginRequiredMixin, ListView):
     template_name = 'assignments/assignment_list.html'
     context_object_name = 'assignments'
 
+    def get_queryset(self):
+        return Assignment.objects.filter(created_by=self.request.user)
+
 class AssignmentCreateView(LoginRequiredMixin, LecturerRequiredMixin, CreateView):
     model = Assignment
     template_name = 'assignments/assignment_form.html'

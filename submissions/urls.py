@@ -7,5 +7,6 @@ urlpatterns = [
     path('execute/', views.execute_code_view, name='execute'),
     path('submit/<int:assignment_id>/', views.submit_code_view, name='submit'),
     path('list/', views.submission_list_scaffold, name='list_scaffold'),
+    path('view/<int:submission_id>/', views.submission_detail_view, name='detail'),
     path('practice/', views.practice_view, name='practice'),
 ]
