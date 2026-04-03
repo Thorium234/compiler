@@ -54,8 +54,9 @@
         class="bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 py-3 shrink-0 shadow-md">
         <div class="flex items-center gap-4">
             <a href="{% url 'users:dashboard' %}"
-                class="text-slate-400 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 py-1.5 px-3 rounded text-sm font-medium">←
-                Dashboard</a>
+                class="text-slate-400 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 py-1.5 px-3 rounded text-sm font-medium">
+                {% if user.is_authenticated %}← Dashboard{% else %}Authenticate{% endif %}
+            </a>
             <h1 class="text-lg font-bold truncate max-w-sm">
                 <span class="text-blue-500 mr-2">/</span>
                 {% if is_practice %}Practice Sandbox{% else %}{{ assignment.title }}{% endif %}

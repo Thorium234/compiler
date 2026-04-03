@@ -11,12 +11,10 @@ def editor_view(request, assignment_id):
     assignment = get_object_or_404(Assignment, id=assignment_id)
     return render(request, 'submissions/editor.html', {'assignment': assignment})
 
-@login_required
 def practice_view(request):
     """Practice sandbox without specific assignment constraints."""
     return render(request, 'submissions/editor.html', {'is_practice': True})
 
-@login_required
 def execute_code_view(request):
     """Temporary test execution API."""
     if request.method == 'POST':

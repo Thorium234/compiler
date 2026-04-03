@@ -1,4 +1,5 @@
 from django.test import TestCase
+import json
 from submissions.services import run_python_code
 from submissions.views import flexible_compare
 
@@ -45,3 +46,19 @@ class GradingLogicTest(TestCase):
     def test_flexible_compare_mismatch(self):
         self.assertFalse(flexible_compare("hello", "world"))
         self.assertFalse(flexible_compare("line1\nline2", "line1\nline3"))
+
+class GuestAccessTest(TestCase):
+    def test_practice_view_guest_access(self):
+        # Should be accessible without login
+        response = self.client.get('/submissions/practice/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_execute_code_guest_access(self):
+        # Should be accessible without login (POST)
+        response = self.client.post('/submissions/execute/', data=json.dumps({'code': 'print(1)', 'inputs': ''}), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+
+    def test_assignment_editor_guest_access(self):
+        # Should NOT be accessible without login
+        response = self.client.get('/submissions/editor/1/')
+        self.assertEqual(response.status_code, 302) # Redirect to login
