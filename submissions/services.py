@@ -14,9 +14,9 @@ def run_python_code(code: str, inputs: str = "") -> dict:
         with open(input_file, 'w') as f:
             f.write(inputs)
 
-        # Basic constraints: max 64MB memory, 0.5 CPU, network isolated, 10s wall timeout
+        # Basic constraints: max 64MB memory, 10s wall timeout
         cmd = [
-            'timeout', '10', 'docker', 'run', '--rm',
+            'timeout', '10', 'docker', '-H', 'unix:///var/run/docker.sock', 'run', '--rm',
             '--memory=64m', '--cpus=0.5',
             '--network', 'none',
             '-v', f'{temp_dir}:/app',
