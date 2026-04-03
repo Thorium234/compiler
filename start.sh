@@ -9,7 +9,10 @@ then
     exit 1
 fi
 
-echo "[1] Starting up containers in detached mode..."
+echo "[1] Pulling required Docker images..."
+docker pull python:3.10-alpine
+
+echo "[2] Starting up containers in detached mode..."
 docker-compose up --build -d
 
 echo "[2] Performing database migrations..."

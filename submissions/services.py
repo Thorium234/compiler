@@ -2,8 +2,8 @@ import subprocess
 import tempfile
 import os
 
-def run_python_code(code: str, inputs: str = "") -> str:
-    """Runs untrusted Python code in a safe Docker container."""
+def run_python_code(code: str, inputs: str = "") -> dict:
+    """Runs untrusted Python code in a safe Docker container and returns structured output."""
     with tempfile.TemporaryDirectory() as temp_dir:
         code_file = os.path.join(temp_dir, 'script.py')
         input_file = os.path.join(temp_dir, 'input.txt')
@@ -14,9 +14,9 @@ def run_python_code(code: str, inputs: str = "") -> str:
         with open(input_file, 'w') as f:
             f.write(inputs)
 
-        # Basic constraints: max 64MB memory, 0.5 CPU, network isolated, 2s wall timeout
+        # Basic constraints: max 64MB memory, 0.5 CPU, network isolated, 10s wall timeout
         cmd = [
-            'timeout', '2', 'docker', 'run', '--rm',
+            'timeout', '10', 'docker', 'run', '--rm',
             '--memory=64m', '--cpus=0.5',
             '--network', 'none',
             '-v', f'{temp_dir}:/app',
@@ -26,15 +26,30 @@ def run_python_code(code: str, inputs: str = "") -> str:
         ]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=3)
-            if result.returncode == 124:
-                return "Error: Execution timed out (Time Limit Exceeded - 2 seconds)."
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
             
-            output = result.stdout
-            if result.stderr:
-                output += "\nError Logs:\n" + result.stderr
-            return output
+            # 124 is the exit code for 'timeout' command when it triggers
+            if result.returncode == 124:
+                return {
+                    'stdout': '',
+                    'stderr': 'Error: Execution timed out (Time Limit Exceeded - 10 seconds).',
+                    'exit_code': 124
+                }
+            
+            return {
+                'stdout': result.stdout,
+                'stderr': result.stderr,
+                'exit_code': result.returncode
+            }
         except subprocess.TimeoutExpired:
-            return "Error: Execution timed out (Time Limit Exceeded - 2 seconds)."
+            return {
+                'stdout': '',
+                'stderr': 'Error: Execution timed out (Time Limit Exceeded - 10 seconds).',
+                'exit_code': 124
+            }
         except Exception as e:
-            return f"System Error: {str(e)}"
+            return {
+                'stdout': '',
+                'stderr': f"System Error: {str(e)}",
+                'exit_code': -1
+            }

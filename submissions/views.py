@@ -24,11 +24,26 @@ def execute_code_view(request):
             data = json.loads(request.body)
             code = data.get('code', '')
             inputs = data.get('inputs', '')
-            output = run_python_code(code, inputs)
+            result = run_python_code(code, inputs)
+            
+            output = result.get('stdout', '')
+            if result.get('stderr'):
+                output += "\n--- Error Logs ---\n" + result['stderr']
+                
             return JsonResponse({'output': output})
         except Exception as e:
             return JsonResponse({'output': f"API Error: {str(e)}"})
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+def flexible_compare(actual, expected):
+    """Compare two strings ignoring trailing whitespace and final newlines."""
+    def clean(s):
+        if s is None: return ""
+        # Split into lines, strip each line, join back, and strip overall
+        lines = [line.rstrip() for line in s.splitlines()]
+        return "\n".join(lines).strip()
+    
+    return clean(actual) == clean(expected)
 
 @login_required
 def submit_code_view(request, assignment_id):
@@ -41,26 +56,34 @@ def submit_code_view(request, assignment_id):
             
             # Execute with assignment's sample input
             sample_input = assignment.sample_input or ""
-            output = run_python_code(code, sample_input)
+            result = run_python_code(code, sample_input)
+            
+            stdout = result.get('stdout', '')
+            stderr = result.get('stderr', '')
+            exit_code = result.get('exit_code', 0)
             
             # Compare with expected output
-            passed = str(output).strip() == str(assignment.expected_output).strip()
+            passed = flexible_compare(stdout, assignment.expected_output)
             
             # Ensure no system errors count as a pass
-            if output.startswith("Error:") or output.startswith("System Error:"):
+            if exit_code != 0:
                 passed = False
 
             # Save submission
+            full_output = stdout
+            if stderr:
+                full_output += "\n--- Error Logs ---\n" + stderr
+                
             Submission.objects.create(
                 assignment=assignment,
                 student=request.user,
                 code=code,
-                output=output,
+                output=full_output,
                 passed=passed
             )
 
             return JsonResponse({
-                'output': output,
+                'output': full_output,
                 'passed': passed
             })
         except Exception as e:
